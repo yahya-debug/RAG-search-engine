@@ -1,26 +1,34 @@
 import string
-from nltk.stem import PorterStemmer
-from files_data import data, stopWords
+from files_data import load_movies, tokenize_text
+from InvertedIndex import InvertedIndex
 
-stemmer = PorterStemmer()
+data = load_movies()
 
-def search(query: str) -> str :
-    result = ""
-    i = 1
-    for k in data["movies"]:
-        parsed_query = query.lower().translate(str.maketrans("", "", string.punctuation)).split(' ')
-        title = k["title"].lower().translate(str.maketrans("", "", string.punctuation))
-        mathces = False
 
+
+class Search:
+
+    def __init__(self, index: InvertedIndex):
+        self.index = index
+
+    def search(self, query: str) -> str :
+        result = []
+        i = 1
+        parsed_query = tokenize_text(query)
+        
+        match_set = set()
         for token in parsed_query:
-            # stemming the token
-            token = stemmer.stem(token)
-            if token in stopWords:
-                continue
-            if token in title:
-                mathces = True
-        if mathces:
-            result += f'{i}. {k["title"]}\n'
-            i = i + 1
+            match_set.update(self.index.get_documents(token))
 
-    return result
+        match_set = sorted(match_set)
+        
+        i = 0
+        for id in match_set:
+            if i == 5:
+                break
+
+            movie = self.index.docmap.get(id)
+            result.append(f"{movie["id"]} - {movie['title']}")
+            i += 1
+
+        return "\n".join(result)
