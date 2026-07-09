@@ -14,12 +14,11 @@ def load_movies():
         data = json.load(file)
     return data
     
-stopWords = {}
+def _preprocess(word):
+    return word.lower().translate(str.maketrans("", "", string.punctuation))
 
 with open(STOPW_PATH, "r") as file:
-    stopWords = file.read().splitlines()
-for stopWord in stopWords:
-    stopWord = stopWord.lower().translate(str.maketrans("", "", string.punctuation))
+    stopWords = [_preprocess(word) for word in file.read().splitlines()]
 
 
 def tokenize_term(term):
@@ -30,15 +29,19 @@ def tokenize_term(term):
     
     return tokenized[0]
 
+def _raw_tokens(text):
+    return text.lower().translate(str.maketrans("", "", string.punctuation)).split()
+
+def count_words(text):
+    return len(_raw_tokens(text))
+
 def tokenize_text(text):
-    tokens = text.lower().translate(str.maketrans("", "", string.punctuation)).split()
+    tokens = _raw_tokens(text)
     result = []
 
     for token in tokens:
-        # stemming the token
-        stemmed = stemmer.stem(token)
-        if stemmed in stopWords:
+        if token in stopWords:
             continue
-        result.append(stemmed)
+        result.append(stemmer.stem(token))
 
     return result
