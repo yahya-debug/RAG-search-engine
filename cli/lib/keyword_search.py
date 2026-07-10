@@ -4,7 +4,7 @@ from files_data import load_movies, tokenize_text, count_words
 import os
 import math
 
-CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "cache")
+CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "cache")
 INDEX_PATH = os.path.join(CACHE_DIR, "index.pkl")
 DOCMAP_PATH = os.path.join(CACHE_DIR, "docmap.pkl")
 TF_PATH = os.path.join(CACHE_DIR, "term_frequencies.pkl")

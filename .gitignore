@@ -3,5 +3,5 @@
 pyproject.toml
 /data/
 uv.lock
-cli/__pycache__
+__pycache__
 cache

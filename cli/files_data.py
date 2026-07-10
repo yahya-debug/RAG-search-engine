@@ -17,6 +17,9 @@ def load_movies():
 def _preprocess(word):
     return word.lower().translate(str.maketrans("", "", string.punctuation))
 
+# because we are working with clean tokens that does not contain puctuation
+# we also should apply the same process to our stop words
+# this fix solved a slight difference error in some values
 with open(STOPW_PATH, "r") as file:
     stopWords = [_preprocess(word) for word in file.read().splitlines()]
 
