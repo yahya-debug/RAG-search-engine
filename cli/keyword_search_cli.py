@@ -1,6 +1,6 @@
 import argparse
 from search import Search
-from cli.lib.keyword_search import InvertedIndex, BM25_K1, BM25_B
+from lib.keyword_search import InvertedIndex, BM25_K1, BM25_B
 from files_data import tokenize_term
 import math
 

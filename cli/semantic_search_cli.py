@@ -1,5 +1,6 @@
 import argparse
 from lib.semantic_search import verify_model, embed_text, verify_embeddings, embed_query_text, SemanticSearch
+from lib.chunked_semantic_search import ChunkedSemanticSearch, semantic_chunking, split_sentences
 from files_data import load_movies
 
 
@@ -21,10 +22,28 @@ def main() -> None:
     search_parser.add_argument("query")
     search_parser.add_argument("--limit", type=int, default=5)
 
-    semantic_search = SemanticSearch()
+    chunk_parser = subparsers.add_parser("chunk")
+    chunk_parser.add_argument("text", type=str)
+    chunk_parser.add_argument("--chunk-size", type=int, default=200)
+    chunk_parser.add_argument("--overlap", type=int, default=0)
+
+    semantic_chunk_parser = subparsers.add_parser("semantic_chunk")
+    semantic_chunk_parser.add_argument("text", type=str)
+    semantic_chunk_parser.add_argument("--max-chunk-size", type=int, default=4)
+    semantic_chunk_parser.add_argument("--overlap", type=int, default=0)
+
+    search_chunked_parser = subparsers.add_parser("search_chunked")
+    search_chunked_parser.add_argument("query")
+    search_chunked_parser.add_argument("--limit", type=int, default=5)
+
+    embed_chunks_parser = subparsers.add_parser("embed_chunks")
     # load
     documents = load_movies()['movies']
+    semantic_search = SemanticSearch()
     semantic_search.load_or_create_embeddings(documents)
+
+    chunked_semantic_search = ChunkedSemanticSearch()
+    chunked_semantic_search.load_or_create_chunk_embeddings(documents)
 
 
     args = parser.parse_args()
@@ -55,6 +74,40 @@ def main() -> None:
                 print(f"{i}. {item['title']} (Score: {item['score']})\n{item['description']}\n")
                 i += 1
             pass
+
+        case "chunk":
+            # word-based chunking: same sliding-window helper as semantic_chunk,
+            # just fed words instead of sentences
+            text_arr = args.text.split(' ')
+            chunks = semantic_chunking(text_arr, args.chunk_size, args.overlap)
+
+            print(f"Chunking {len(args.text)} characters")
+            for i in range(len(chunks)):
+                print(f"{i+1}. {chunks[i]}")
+            pass
+
+        case "semantic_chunk":
+            text_arr = split_sentences(args.text)
+            chunks = semantic_chunking(text_arr, args.max_chunk_size, args.overlap)
+
+            print(f"Semantically chunking {len(args.text)} characters")
+            for i in range(len(chunks)):
+                print(f"{i+1}. {chunks[i]}")
+            pass
+
+        case "embed_chunks":
+            embeddings = chunked_semantic_search.load_or_create_chunk_embeddings(documents)
+            print(f"Generated {len(embeddings)} chunked embeddings")
+
+            pass
+
+        case "search_chunked":
+            search = chunked_semantic_search.search_chunks(args.query)
+            for i in range(len(search)):
+                print(f"\n{i}. {search[i]['title']} (score: {search[i]['score']:.4f})")
+                print(f"   {search[i]['document']}...")
+            pass
+
         case _:
             parser.print_help()
 

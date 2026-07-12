@@ -1,6 +1,6 @@
 import string
 from files_data import load_movies, tokenize_text
-from cli.lib.keyword_search import InvertedIndex
+from lib.keyword_search import InvertedIndex
 
 data = load_movies()
 
