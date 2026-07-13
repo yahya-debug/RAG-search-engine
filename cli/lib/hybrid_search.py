@@ -60,8 +60,13 @@ class HybridSearch:
 
 
     def rrf_search(self, query: str, k: int, limit: int = 10) -> list[dict]:
+        print(f"[rrf_search] query='{query}' k={k} limit={limit}")
+
         bm25_res = self._bm25_search(query, 500*limit)
+        print(f"[rrf_search] bm25 stage: {len(bm25_res)} results")
+
         chunked_semantic_res = self.semantic_search.search_chunks(query, 500*limit)
+        print(f"[rrf_search] semantic stage: {len(chunked_semantic_res)} results")
 
         id_score: dict[int, float] = {} # map id with document's score from each algo
         i = 1
@@ -75,8 +80,10 @@ class HybridSearch:
                 id_score[doc['id']] = 0
             id_score[doc['id']] += (1/(k+i))
             i+=1
+        print(f"[rrf_search] fusion stage: {len(id_score)} unique docs scored")
 
         result = sorted(id_score.items(), key=lambda x:x[1], reverse=True)
+        print(f"[rrf_search] final stage: returning top {min(limit, len(result))} of {len(result)}")
 
         return result[:limit]
 
@@ -105,6 +112,7 @@ def normalize(arr: list) -> list:
 
 
 def rrf_search(hybrid: HybridSearch, query, k, limit, enhance = None, rerank_method = None):
+    print(f"Original query: '{query}'")
     msg = [
         {
             "role": "user"
@@ -165,6 +173,7 @@ User query: "{query}"
 
     if rerank_method == "individual":
         ans = hybrid.rrf_search(query, k, 5*limit)
+        print(f"RRF search results: {ans}")
 
         out = {}
         for doc in ans:
@@ -189,9 +198,11 @@ Score:"""
             # time.sleep(3)
 
         sort = sorted(out.items(), key=lambda x:x[1], reverse=True)
+        print(f"Final results after re-ranking: {sort[:limit]}")
         return sort[:limit]
     elif rerank_method == "batch":
         ans = hybrid.rrf_search(query, k, 5*limit)
+        print(f"RRF search results: {ans}")
 
         doc_list_str = []
         for doc in ans:
@@ -218,10 +229,12 @@ Ranking:"""
         scores = json.loads(client.chat.completions.create(messages=msg, model="openrouter/free").choices[0].message.content)
 
         scores = [(scores[i], i+1) for i in range(len(scores))]
+        print(f"Final results after re-ranking: {scores[:limit]}")
         return scores[:limit]
 
     elif rerank_method == "cross_encoder":
         ans = hybrid.rrf_search(query, k, 5*limit)
+        print(f"RRF search results: {ans}")
         cross_encoder = CrossEncoder("cross-encoder/ms-marco-TinyBERT-L2-v2")
 
         pairs = []
@@ -234,6 +247,9 @@ Ranking:"""
         id_score = [(ans[i][0], scores[i]) for i in range(len(ans))]
 
         sort = sorted(id_score, key=lambda x:x[1], reverse=True)
+        print(f"Final results after re-ranking: {sort}")
 
         return sort
-    return hybrid.rrf_search(query, k, limit)
+    ans = hybrid.rrf_search(query, k, limit)
+    print(f"RRF search results: {ans}")
+    return ans
